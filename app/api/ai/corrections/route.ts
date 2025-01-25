@@ -11,7 +11,7 @@ export const POST = async (request: Request) => {
     });
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4o-2024-08-06",
       messages: [
         {
           role: "system",

@@ -43,21 +43,27 @@ export async function POST(request: Request) {
     
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: `Use the rubric pdf to score the ${code} pdf student solution. Create a detailed grading table with the following format:
+      content: `Use the rubric pdf to score the code for the student solution. Create a detailed grading table with the following format:
 Requirements:
 1. Each rubric criterion should be a separate row
 2. Left column must show points as "X/Y" format
 3. Right column should contain detailed justification
 4. Include a final row with total points out of 9
-5. Use proper Markdown syntax with aligned columns`,
+5. Use proper Markdown syntax with aligned columns
+
+Here is the code:
+<code>
+${code}
+</code>
+`,
       "attachments": [
         { "file_id": fileId, "tools": [{"type": "file_search"}] }
       ],
     });
     const assistant = await openai.beta.assistants.create({
       name: "Grading Assistant",
-      instructions: "You are an assistant that helps grade student solutions based on provided rubrics.",
-      model: "gpt-4-turbo-preview",
+      instructions: "You are an assistant that helps grade student solutions based on a provided rubric.",
+      model: "gpt-4o-2024-08-06",
       tools: [{ type: "file_search" }]
     });
 
@@ -109,7 +115,7 @@ export async function corrections(request: Request) {
     });
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4o-2024-08-06",
       messages: [
         {
           role: "system",
