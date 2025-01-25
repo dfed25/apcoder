@@ -1,6 +1,57 @@
 "use client";
 import dynamic from 'next/dynamic';
 import Image from "next/image";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import React from 'react';
+
+// Add helper function for table cell content
+const stringifyContent = (content: any): React.ReactNode => {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) return content.map(stringifyContent);
+  if (React.isValidElement(content)) return content;
+  if (typeof content === 'object' && content !== null) return stringifyContent(Object.values(content));
+  if (content === undefined) return String("");
+  return String(content);
+};
+
+const renderTableCell = (props: any, isHeader:boolean) => {
+  const content = stringifyContent(props.children);
+  return React.createElement(
+    props.isHeader ? 'th' : 'td',
+    {
+      ...props,
+      style: {
+        ...props.style,
+        minWidth: '150px',
+        padding: '8px',
+        boxSizing: 'border-box',
+        border: '5px solid #e5e7eb',
+        borderCollapse: 'collapse',
+        backgroundColor: isHeader ? '#e5e7eb' : 'transparent', // Gray background for headers
+        fontWeight: isHeader ? '600' : 'normal', // Optional: make header text bold
+      },
+    },
+    React.Children.map(content, child => 
+      typeof child === 'string' ? child.replace(/<br>/g, '\n') : child
+    )
+  );
+};
+
+function MarkdownComponent() {
+  const markdown = `
+| Syntax | Description |
+| ----- | ---- |
+| Header | Title |
+| Paragraph | Text |
+`;
+
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+      {markdown}
+    </ReactMarkdown>
+  );
+}
 import {
   Card,
   CardContent,
@@ -39,12 +90,14 @@ const setPDFWorker = async () => {
 
 export default function Home() {
     const years = Array.from({ length: 3 }, (_, i) => 2002 + i);
+    const [result, setResult] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const questionsByYear: { [key: number]: any[] } = {
-      2002: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf"}],
-      2003: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf"}],
-      2004: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf"}],
-      2024: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf"}],
+      2002: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf",rubric:"/pdf/2022/FR 2022 #1 (Game)/Rubric 2022 #1 (Game).docx"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf",rubric:"/pdf/2022/FR 2022 #2 (Textbook)/Rubric 2022 #2 (Textbook).docx"}],
+      2003: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf",rubric:"/pdf/2022/FR 2022 #1 (Game)/Rubric 2022 #1 (Game).docx"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf",rubric:"/pdf/2022/FR 2022 #2 (Textbook)/Rubric 2022 #2 (Textbook).docx"}],
+      2004: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf",rubric:"/pdf/2022/FR 2022 #1 (Game)/Rubric 2022 #1 (Game).docx"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf",rubric:"/pdf/2022/FR 2022 #2 (Textbook)/Rubric 2022 #2 (Textbook).docx"}],
+      2024: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf",rubric:"/pdf/2022/FR 2022 #1 (Game)/Rubric 2022 #1 (Game).docx"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf",rubric:"/pdf/2022/FR 2022 #2 (Textbook)/Rubric 2022 #2 (Textbook).docx"}],
     };
   
     const [selectedYear, setSelectedYear] = useState<string>("");
@@ -55,6 +108,7 @@ export default function Home() {
     const [code, setCode] = useState(
       `function add(a, b) {\n  return a + b;\n}`
     );
+    const [selectedQuestionObj, setSelectedQuestionObj] = useState<any>(null);
   
     function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
       setNumPages(numPages);
@@ -69,85 +123,184 @@ export default function Home() {
     };
   
     const handleQuestionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-      setSelectedQuestion(event.target.value);
+      const questionPath = event.target.value;
+      const selectedQ = questions.find(q => q.path === questionPath);
+      setSelectedQuestionObj(selectedQ);
+      setSelectedQuestion(questionPath);
+  
     };
   
   // Set up PDF worker
   useEffect(() => {
     setPDFWorker();
   }, []);
-
+  function handleClick(){
+    fetchPdfAndAnalyze();
+  }
   // ... rest of your component code, but replace Document with PDFDocument and Page with PDFPage
+  async function fetchPdfAndAnalyze() {
+    setIsLoading(true);
+    try {
+      const fullPath = `${selectedQuestionObj.rubric}`;
+      const serverPath = `${window.location.origin}`;
+      const formData = new FormData();
+      formData.append('filePath', fullPath);
+      formData.append("code", code);
+      formData.append("serverPath", serverPath);
+      
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        body: formData,
+      });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      console.log(data);
+      setResult(data.content);
+    } catch (error) {
+      console.error('Error:', error);
+      setResult(`Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <div className="flex space-x-4">
-        <select
-          className="border border-gray-300 rounded-md p-2"
-          value={selectedYear}
-          onChange={handleYearChange}
-        >
-          <option value="" disabled>
-            Select a year
-          </option>
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-        <select
-          className="border border-gray-300 rounded-md p-2"
-          value={selectedQuestion}
-          onChange={handleQuestionChange}
-          disabled={!selectedYear || !questions.length}
-        >
-          <option value="" disabled>
-            Select a question
-          </option>
-          {questions.map((question, index) => (
-            <option key={index} value={question.path}>
-              {question.description}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="flex flex-col space-y-4">
-        <ScrollArea 
-          className="border-4 border-gray-500 p-4"
-          style={{ maxHeight: '60vh', width: '80vw', overflow: 'auto' }}
-        >
-           <ScrollBar orientation="horizontal" />
-             <PDFDocument 
-              file={selectedQuestion ? encodeURIComponent(selectedQuestion) : undefined} 
-              onLoadSuccess={onDocumentLoadSuccess}
-            >
-              {Array.from(new Array(numPages), (el, index) => (
-                <div key={`page_container_${index + 1}`} className="mb-4 last:mb-0">
-                  <PDFPage key={`page_${index + 1}`} pageNumber={index + 1} scale={1.5} />
-                  {numPages && index < numPages - 1 && <hr className="border-t-2 border-gray-300 my-4" />}
-                </div>
-              ))}
-            </PDFDocument>
-           
-        </ScrollArea>
-        <ScrollArea 
-          className="border-4 border-gray-500 p-4"
-          style={{ maxHeight: '80vh', width: '80vw', overflow: 'auto' }}
-        >
-          <Editor
-            value={code}
-            onValueChange={code => setCode(code)}
-            highlight={code => highlight(code, languages.js)}
-            padding={10}
-            style={{
-              fontFamily: '"Fira code", "Fira Mono", monospace',
-              fontSize: 12,
+    <div className="grid grid-rows-[1fr] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family:var(--font-geist-sans)]">
+      {isLoading ? (
+        <div className="flex items-center justify-center w-full h-full mt-20">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+        </div>
+      ) : result ? (
+        <div className="mt-20 p-4 border rounded-lg w-full max-w-4xl">
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            components={{
+              td: props => renderTableCell({ ...props}, false ),
+              th: props => renderTableCell({ ...props}, true )
             }}
-          />
-           <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      </div>
+          >
+            {result}
+          </ReactMarkdown>
+          <div className="flex space-x-4 mt-4">
+            <button 
+              className="bg-blue-500 text-white p-2 rounded-md"
+              onClick={() => setResult('')}
+            >
+              Back to Editor
+            </button>
+            <button 
+              className="bg-green-500 text-white p-2 rounded-md"
+              onClick={async () => {
+                setIsLoading(true);
+                try {
+                  const formData = new FormData();
+                  formData.append('code', code);
+                  formData.append('previousGrade', result);
+                  
+                  const response = await fetch('/api/ai/corrections', {
+                    method: 'POST',
+                    body: formData,
+                  });
+                  
+                  if (!response.ok) throw new Error('Failed to get corrections');
+                  
+                  const data = await response.json();
+                  setResult(data.content);
+                } catch (error) {
+                  console.error('Error:', error);
+                  setResult(`Error getting corrections: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+            >
+              Fix My Code
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex space-x-4">
+            <select
+              className="border border-gray-300 rounded-md p-2"
+              value={selectedYear}
+              onChange={handleYearChange}
+            >
+              <option value="" disabled>
+                Select a year
+              </option>
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+            <select
+              className="border border-gray-300 rounded-md p-2"
+              value={selectedQuestion}
+              onChange={handleQuestionChange}
+              disabled={!selectedYear || !questions.length}
+            >
+              <option value="" disabled>
+                Select a question
+              </option>
+              {questions.map((question, index) => (
+                <option key={index} value={question.path}>
+                  {question.description}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col space-y-4">
+            <ScrollArea 
+              className="border-4 border-gray-500 p-4"
+              style={{ maxHeight: '60vh', width: '80vw', overflow: 'auto' }}
+            >
+               <ScrollBar orientation="horizontal" />
+                 <PDFDocument 
+                  file={selectedQuestion ? encodeURIComponent(selectedQuestion) : undefined} 
+                  onLoadSuccess={onDocumentLoadSuccess}
+                >
+                  {Array.from(new Array(numPages), (el, index) => (
+                    <div key={`page_container_${index + 1}`} className="mb-4 last:mb-0">
+                      <PDFPage key={`page_${index + 1}`} pageNumber={index + 1} scale={1.5} />
+                      {numPages && index < numPages - 1 && <hr className="border-t-2 border-gray-300 my-4" />}
+                    </div>
+                  ))}
+                </PDFDocument>
+               
+            </ScrollArea>
+            <ScrollArea 
+              className="border-4 border-gray-500 p-4"
+              style={{ maxHeight: '80vh', width: '80vw', overflow: 'auto' }}
+            >
+              <Editor
+                value={code}
+                onValueChange={code => setCode(code)}
+                highlight={code => highlight(code, languages.js)}
+                padding={10}
+                style={{
+                  fontFamily: '"Fira code", "Fira Mono", monospace',
+                  fontSize: 12,
+                }}
+              />
+               <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+              <button className="bg-blue-500 text-white p-2 rounded-md" onClick={handleClick}>
+                submit code
+
+              </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
