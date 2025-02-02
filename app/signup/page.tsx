@@ -1,8 +1,8 @@
 'use client'
 
-import Image from "next/image";
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { supabase } from '@/lib/supabase';
 import {
   Card,
   CardContent,
@@ -11,72 +11,51 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { useEffect, useState } from 'react';
 
-export default function Home() {
-  const [isLoading, setIsLoading] = useState(false);
+export default function SignUp() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push('/home');
-      }
-    };
-    
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        router.push('/home');
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [router, supabase]);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
+
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
 
       if (error) {
         throw error;
       }
 
-      if (data.session) {
-        router.refresh(); // Refresh the router to update server-side session
-        router.push('/home');
-      }
+      alert('Check your email for the confirmation link');
+      router.push('/');
     } catch (error) {
       alert(error instanceof Error ? error.message : 'An error occurred');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold">AP Coder</h1>
-        <p className="text-lg text-gray-600">Welcome to AP Coder, your gateway to coding excellence.</p>
+        <p className="text-lg text-gray-600">Create your account</p>
       </div>
       <Card className="w-full max-w-sm p-4">
         <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>Please enter your credentials</CardDescription>
+          <CardTitle>Sign Up</CardTitle>
+          <CardDescription>Enter your details to create an account</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -106,17 +85,17 @@ export default function Home() {
             </div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {loading ? 'Creating account...' : 'Sign up'}
             </button>
           </form>
         </CardContent>
         <CardFooter>
-          <p className="text-sm text-gray-500">Don't have an account? <a href="#" className="text-indigo-600 hover:text-indigo-500">Sign up</a></p>
+          <p className="text-sm text-gray-500">Already have an account? <a href="/" className="text-indigo-600 hover:text-indigo-500">Sign in</a></p>
         </CardFooter>
       </Card>
     </div>
   );
-}
+} 

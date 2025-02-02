@@ -1,5 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
-import formidable from 'formidable';
+
 import fs from 'fs';
 import path from 'path';
 import OpenAI from 'openai';
@@ -92,8 +91,12 @@ ${code}
     await openai.beta.assistants.del(assistant.id);
     if (assistantResponse.type === 'text') {
       return Response.json({ content: assistantResponse.text.value });
+    } else if (assistantResponse.type === 'image_url') {
+      return Response.json({ content: assistantResponse.image_url.url });
+    } else if (assistantResponse.type === 'image_file') {
+      return Response.json({ content: assistantResponse.image_file.file_id });
     } else {
-      return Response.json({ content: assistantResponse.image_file.url });
+      return Response.json({ content: 'Unsupported response type' });
     }
   } catch (error) {
     console.error('API Error:', error);

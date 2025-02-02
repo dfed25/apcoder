@@ -4,6 +4,7 @@ import Image from "next/image";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React from 'react';
+import { useRouter } from 'next/navigation';
 
 // Add helper function for table cell content
 const stringifyContent = (content: any): React.ReactNode => {
@@ -92,6 +93,7 @@ export default function Home() {
     const years = Array.from({ length: 3 }, (_, i) => 2002 + i);
     const [result, setResult] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
 
     const questionsByYear: { [key: number]: any[] } = {
       2002: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf",rubric:"/pdf/2022/FR 2022 #1 (Game)/Rubric 2022 #1 (Game).docx"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf",rubric:"/pdf/2022/FR 2022 #2 (Textbook)/Rubric 2022 #2 (Textbook).docx"}],
@@ -185,8 +187,32 @@ export default function Home() {
       setIsLoading(false);
     }
   }
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        router.push('/');
+      }
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
   return (
     <div className="grid grid-rows-[1fr] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family:var(--font-geist-sans)]">
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+      >
+        Logout
+      </button>
       {isLoading ? (
         <div className="flex items-center justify-center w-full h-full mt-20">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
