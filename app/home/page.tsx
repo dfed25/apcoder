@@ -110,11 +110,24 @@ export default function Home() {
     );
     const [selectedQuestionObj, setSelectedQuestionObj] = useState<any>(null);
   
+    // Add cleanup for PDF rendering
+    useEffect(() => {
+      return () => {
+        // Cleanup function to handle unmounting
+        setNumPages(undefined);
+        setPageNumber(1);
+      };
+    }, [selectedQuestion]);
+
     function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
       setNumPages(numPages);
     }
   
-    
+    function onDocumentLoadError(error: Error): void {
+      console.log('PDF load error:', error);
+      // Optionally set an error state here if you want to show it to the user
+    }
+  
     const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
       const year = parseInt(event.target.value);
       setSelectedYear(year.toString());
@@ -179,17 +192,25 @@ export default function Home() {
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
         </div>
       ) : result ? (
-        <div className="mt-20 p-4 border rounded-lg w-full max-w-4xl">
-          <ReactMarkdown 
-            remarkPlugins={[remarkGfm]}
-            components={{
-              td: props => renderTableCell({ ...props}, false ),
-              th: props => renderTableCell({ ...props}, true )
-            }}
+        <div className="flex flex-col gap-4 w-[80vw]">
+          <ScrollArea 
+            className="border-4 border-gray-500 p-4 mt-20"
+            style={{ maxHeight: '80vh', overflow: 'auto' }}
           >
-            {result}
-          </ReactMarkdown>
-          <div className="flex space-x-4 mt-4">
+            <div className="p-4 rounded-lg w-full max-w-4xl">
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  td: props => renderTableCell({ ...props}, false ),
+                  th: props => renderTableCell({ ...props}, true )
+                }}
+              >
+                {result}
+              </ReactMarkdown>
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+          <div className="flex space-x-4">
             <button 
               className="bg-blue-500 text-white p-2 rounded-md"
               onClick={() => setResult('')}
@@ -204,6 +225,8 @@ export default function Home() {
                   const formData = new FormData();
                   formData.append('code', code);
                   formData.append('previousGrade', result);
+                  formData.append('filePath', selectedQuestionObj.rubric);
+                  formData.append('serverPath', window.location.origin);
                   
                   const response = await fetch('/api/ai/corrections', {
                     method: 'POST',
@@ -268,10 +291,19 @@ export default function Home() {
                  <PDFDocument 
                   file={selectedQuestion ? encodeURIComponent(selectedQuestion) : undefined} 
                   onLoadSuccess={onDocumentLoadSuccess}
+                  onLoadError={onDocumentLoadError}
+                  loading={<div>Loading PDF...</div>}
+                  error={<div>Error loading PDF!</div>}
                 >
                   {Array.from(new Array(numPages), (el, index) => (
                     <div key={`page_container_${index + 1}`} className="mb-4 last:mb-0">
-                      <PDFPage key={`page_${index + 1}`} pageNumber={index + 1} scale={1.5} />
+                      <PDFPage 
+                        key={`page_${index + 1}`} 
+                        pageNumber={index + 1} 
+                        scale={1.5}
+                        loading={<div>Loading page...</div>}
+                        error={<div>Error loading page!</div>}
+                      />
                       {numPages && index < numPages - 1 && <hr className="border-t-2 border-gray-300 my-4" />}
                     </div>
                   ))}

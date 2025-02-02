@@ -1,3 +1,5 @@
+'use client'
+
 import Image from "next/image";
 import {
   Card,
@@ -9,6 +11,20 @@ import {
 } from "@/components/ui/card"
 
 export default function Home() {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email');
+    const password = formData.get('password');
+
+    if (email === 'test@gmail.com' && password === 'testing123') {
+      // Using window.location for client-side navigation in this example
+      window.location.href = '/home';
+    } else {
+      alert('Invalid credentials');
+    }
+  };
+
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <div className="text-center mb-8">
@@ -21,7 +37,7 @@ export default function Home() {
           <CardDescription>Please enter your credentials</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email
@@ -29,6 +45,7 @@ export default function Home() {
               <input
                 type="email"
                 id="email"
+                name="email"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
               />
@@ -40,6 +57,7 @@ export default function Home() {
               <input
                 type="password"
                 id="password"
+                name="password"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
               />
