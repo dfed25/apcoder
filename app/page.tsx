@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClientComponentClient();
 
@@ -42,6 +43,7 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -57,11 +59,11 @@ export default function Home() {
       }
 
       if (data.session) {
-        router.refresh(); // Refresh the router to update server-side session
+        router.refresh();
         router.push('/home');
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'An error occurred');
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -69,6 +71,22 @@ export default function Home() {
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      {error && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 w-full max-w-sm">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span className="block sm:inline">{error}</span>
+            <button
+              className="absolute top-0 bottom-0 right-0 px-4 py-3"
+              onClick={() => setError(null)}
+            >
+              <span className="sr-only">Dismiss</span>
+              <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold">AP Coder</h1>
         <p className="text-lg text-gray-600">Welcome to AP Coder, your gateway to coding excellence.</p>

@@ -45,10 +45,13 @@ export async function POST(request: Request) {
       content: `Use the rubric pdf to score the code for the student solution. Create a detailed grading table with the following format:
 Requirements:
 1. Each rubric criterion should be a separate row
-2. Left column must show points as "X/Y" format
+2. Left column must show points as "X/1" format. You either get 1 point or 0 points.
 3. Right column should contain detailed justification
 4. Include a final row with total points out of 9
-5. Use proper Markdown syntax with aligned columns
+5. Use proper Markdown syntax with aligned columns for tables
+6. Use the rubric to grade the code
+7. do not cite the rubric, just use it to grade the code
+8. make sure to go through every item in the rubric and grade the code accordingly
 
 Here is the code:
 <code>
@@ -61,8 +64,9 @@ ${code}
     });
     const assistant = await openai.beta.assistants.create({
       name: "Grading Assistant",
-      instructions: "You are an assistant that helps grade student solutions based on a provided rubric.",
+      instructions: "You are an assistant that helps grade student AP Computer Science A solutions based on a provided rubric. You put the grading table in proper markdown format. No need to cite the rubric, just use it to grade the code.",
       model: "gpt-4o-2024-08-06",
+      temperature: 0.1,
       tools: [{ type: "file_search" }]
     });
 
@@ -119,6 +123,7 @@ export async function corrections(request: Request) {
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-2024-08-06",
+      temperature: 0.1,
       messages: [
         {
           role: "system",
@@ -126,7 +131,12 @@ export async function corrections(request: Request) {
         },
         {
           role: "user",
-          content: `Based on this grading result:\n${previousGrade}\n\nPlease provide the complete corrected version of this code:\n${code}\n\nInclude inline comments (using // or /* */) next to each change explaining why the modification was made to address specific points from the grading rubric. Start your response with a brief summary of the changes. consult the rubric to make the changes necessary to address the points lost.`
+          content: `Based on this grading result:\n${previousGrade}\n\n
+                    Please provide the complete corrected version of this code:\n${code}\n
+                    Include inline comments (using // or /* */) next to each change explaining why the modification was made to address specific points from the grading rubric.
+                     Start your response with a brief summary of the changes. consult the rubric to make the changes necessary to address the points lost.
+                     put the corrected code in a code block.
+                     `
           
         }
       ]

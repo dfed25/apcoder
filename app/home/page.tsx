@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
 
 // Add helper function for table cell content
 const stringifyContent = (content: any): React.ReactNode => {
@@ -63,7 +64,6 @@ import {
 } from "@/components/ui/card"
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { useEffect, useState } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs/components/prism-core';
@@ -90,20 +90,48 @@ const setPDFWorker = async () => {
 };
 
 export default function Home() {
-    const years = Array.from({ length: 3 }, (_, i) => 2002 + i);
     const [result, setResult] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string>('');
     const router = useRouter();
+    const [questionsByYear, setQuestionsByYear] = useState<{ [key: number]: any[] }>({});
+    const [years, setYears] = useState<number[]>([]);
+    
+    useEffect(() => {
+      async function fetchQuestions() {
+        try {
+          const response = await fetch('/api/questions');
+          const data = await response.json();
+          
+          // Organize questions by year, only including those with rubrics
+          const questionsByYearMap = data.reduce((acc: { [key: number]: any[] }, question: any) => {
+            // Skip questions without a rubric
+            if (!question.rubric) return acc;
+            
+            if (!acc[question.year]) {
+              acc[question.year] = [];
+            }
+            acc[question.year].push({
+              description: question.description,
+              path: question.path,
+              rubric: question.rubric
+            });
+            return acc;
+          }, {});
+          
+          setQuestionsByYear(questionsByYearMap);
+          // Set years array from the available years, sorted in ascending order
+          setYears(Object.keys(questionsByYearMap).map(Number).sort((a, b) => a - b));
+        } catch (error) {
+          console.error('Error fetching questions:', error);
+        }
+      }
 
-    const questionsByYear: { [key: number]: any[] } = {
-      2002: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf",rubric:"/pdf/2022/FR 2022 #1 (Game)/Rubric 2022 #1 (Game).docx"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf",rubric:"/pdf/2022/FR 2022 #2 (Textbook)/Rubric 2022 #2 (Textbook).docx"}],
-      2003: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf",rubric:"/pdf/2022/FR 2022 #1 (Game)/Rubric 2022 #1 (Game).docx"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf",rubric:"/pdf/2022/FR 2022 #2 (Textbook)/Rubric 2022 #2 (Textbook).docx"}],
-      2004: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf",rubric:"/pdf/2022/FR 2022 #1 (Game)/Rubric 2022 #1 (Game).docx"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf",rubric:"/pdf/2022/FR 2022 #2 (Textbook)/Rubric 2022 #2 (Textbook).docx"}],
-      2024: [{description:"Question #1", path:"/pdf/2022/FR 2022 #1 (Game)/Question 2022 #1 (Game).pdf",rubric:"/pdf/2022/FR 2022 #1 (Game)/Rubric 2022 #1 (Game).docx"}, {description:"Question #2", path:"/pdf/2022/FR 2022 #2 (Textbook)/Question 2022 #2 (Textbook).pdf",rubric:"/pdf/2022/FR 2022 #2 (Textbook)/Rubric 2022 #2 (Textbook).docx"}],
-    };
-  
+      fetchQuestions();
+    }, []);
+
     const [selectedYear, setSelectedYear] = useState<string>("");
-    const [questions, setQuestions] = useState<any[]>(questionsByYear[2002] || []);
+    const [questions, setQuestions] = useState<any[]>([]);
     const [selectedQuestion, setSelectedQuestion] = useState<string>("");
     const [numPages, setNumPages] = useState<number>();
     const [pageNumber, setPageNumber] = useState<number>(1);
@@ -152,7 +180,7 @@ export default function Home() {
   function handleClick(){
     fetchPdfAndAnalyze();
   }
-  // ... rest of your component code, but replace Document with PDFDocument and Page with PDFPage
+
   async function fetchPdfAndAnalyze() {
     setIsLoading(true);
     try {
@@ -199,14 +227,28 @@ export default function Home() {
 
       if (response.ok) {
         router.push('/');
+      } else {
+        setErrorMessage('Failed to logout. Please try again.');
       }
     } catch (error) {
       console.error('Error logging out:', error);
+      setErrorMessage('An error occurred while logging out');
     }
   };
 
   return (
     <div className="grid grid-rows-[1fr] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family:var(--font-geist-sans)]">
+      {errorMessage && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <span className="block sm:inline">{errorMessage}</span>
+          <span className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setErrorMessage('')}>
+            <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <title>Close</title>
+              <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+            </svg>
+          </span>
+        </div>
+      )}
       <button
         onClick={handleLogout}
         className="absolute top-4 right-4 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -219,10 +261,7 @@ export default function Home() {
         </div>
       ) : result ? (
         <div className="flex flex-col gap-4 w-[80vw]">
-          <ScrollArea 
-            className="border-4 border-gray-500 p-4 mt-20"
-            style={{ maxHeight: '80vh', overflow: 'auto' }}
-          >
+          <ScrollArea className="border-4 border-gray-500 p-4 mt-20 w-full">
             <div className="p-4 rounded-lg w-full max-w-4xl">
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
@@ -236,6 +275,7 @@ export default function Home() {
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
+          
           <div className="flex space-x-4">
             <button 
               className="bg-blue-500 text-white p-2 rounded-md"
