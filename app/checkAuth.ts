@@ -22,7 +22,8 @@ export async function login(username: string, password: string) {
   }
 
   revalidatePath('/home', 'layout')
-  redirect('/home')
+ 
+  return true;
 }
 
 export async function signup(formData: FormData) {

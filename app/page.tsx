@@ -60,6 +60,7 @@ export default function Home() {
 
       if (data.session) {
         await login(email, password);
+        router.push('/home');
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
