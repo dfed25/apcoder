@@ -205,7 +205,7 @@ export default  function Home() {
   const handleLogout = async () => {
     try {
       const response = await fetch('/auth/logout', {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
