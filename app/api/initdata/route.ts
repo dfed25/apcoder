@@ -64,15 +64,15 @@ async function enumeratePdfDirectory(baseDir: string): Promise<FREntry[]> {
 }
 
 
-export async function GET(request: Request) {
-    const requestUrl = new URL(request.url);
+export async function GET() {
+    
    
       const supabase = createRouteHandlerClient({ cookies });
   
    const data = await enumeratePdfDirectory(path.join(process.cwd(), 'public'));
    for (const item of data) {
     try {
-       let result = await supabase.from('questions').insert({
+       const result = await supabase.from('questions').insert({
             year: item.year,
             description: item.description,
             path: item.path,

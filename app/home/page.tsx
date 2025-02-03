@@ -1,6 +1,6 @@
 "use client";
 import dynamic from 'next/dynamic';
-import Image from "next/image";
+
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React from 'react';
@@ -40,28 +40,6 @@ const renderTableCell = (props: any, isHeader:boolean) => {
   );
 };
 
-function MarkdownComponent() {
-  const markdown = `
-| Syntax | Description |
-| ----- | ---- |
-| Header | Title |
-| Paragraph | Text |
-`;
-
-  return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-      {markdown}
-    </ReactMarkdown>
-  );
-}
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -134,7 +112,7 @@ export default function Home() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [selectedQuestion, setSelectedQuestion] = useState<string>("");
     const [numPages, setNumPages] = useState<number>();
-    const [pageNumber, setPageNumber] = useState<number>(1);
+  
     const [code, setCode] = useState(
       `function add(a, b) {\n  return a + b;\n}`
     );
@@ -145,7 +123,7 @@ export default function Home() {
       return () => {
         // Cleanup function to handle unmounting
         setNumPages(undefined);
-        setPageNumber(1);
+      
       };
     }, [selectedQuestion]);
 

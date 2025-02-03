@@ -10,9 +10,8 @@ export async function POST(request: Request) {
     const serverPath = formData.get('serverPath') as string;
 
     const code = formData.get('code') as string;
-    const message = formData.get('message') as string;
     // Convert PDF to base64
-    let rubric = encodeURIComponent(filePath)
+    const rubric = encodeURIComponent(filePath)
     console.log(`${serverPath}/${rubric}`);
     const pdfResponse = await fetch(`${serverPath}/${rubric}`);
     // Download the file content

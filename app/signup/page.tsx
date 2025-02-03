@@ -25,14 +25,14 @@ export default function SignUp() {
     const password = formData.get('password') as string;
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data , error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
-
+      console.log(data);
       if (error) {
         throw error;
       }
