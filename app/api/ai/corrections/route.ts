@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     // Create a temporary file
     const fileExtension = filePath.split('.').pop() || 'pdf';
-    const tempFilePath = path.join(process.cwd(), `temp.${fileExtension}`);
+    const tempFilePath = path.join("/tmp", `temp.${fileExtension}`);
     await fs.promises.writeFile(tempFilePath, Buffer.from(fileBuffer));
 
     // Upload file to OpenAI
@@ -74,8 +74,12 @@ export async function POST(request: Request) {
 
     if (assistantResponse.type === 'text') {
       return Response.json({ content: assistantResponse.text.value });
+    } else if (assistantResponse.type === 'image_url') {
+      return Response.json({ content: assistantResponse.image_url.url });
+    } else if (assistantResponse.type === 'image_file') {
+      return Response.json({ content: assistantResponse.image_file.file_id });
     } else {
-      return Response.json({ content: assistantResponse.image_file.url });
+      return Response.json({ content: 'Unsupported response type' });
     }
   } catch (error) {
     console.error('API Error:', error);

@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
     // Create a temporary file with the original file extension
     const fileExtension = filePath.split('.').pop() || 'pdf';
-    const tempFilePath = path.join(process.cwd(), `temp.${fileExtension}`);
+    const tempFilePath = path.join("/tmp", `temp.${fileExtension}`);
     await fs.promises.writeFile(tempFilePath, Buffer.from(fileBuffer));
 
     // Upload the file to OpenAI using the file path
