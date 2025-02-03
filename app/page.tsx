@@ -59,7 +59,7 @@ export default function Home() {
       }
 
       if (data.session) {
-        login(email, password);
+        await login(email, password);
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');

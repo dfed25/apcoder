@@ -41,21 +41,30 @@ export async function POST(request: Request) {
     
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: `Use the rubric pdf to score the code for the student solution. Create a detailed grading table with the following format:
+      content: `Use the rubric pdf to score the java code for the student solution. Create a detailed grading table with the following format:
+
 Requirements:
 1. Each rubric criterion should be a separate row
 2. Left column must show points as "X/1" format. You either get 1 point or 0 points.
 3. Right column should contain detailed justification
-4. Include a final row with total points out of 9
+4. Include a final row that shows gained points/total points
 5. Use proper Markdown syntax with aligned columns for tables
-6. Use the rubric to grade the code
-7. do not cite the rubric, just use it to grade the code
-8. make sure to go through every item in the rubric and grade the code accordingly
+6. do not cite the rubric, just use it to grade the code
+7. make sure to go through every item in the rubric and grade the code accordingly
+8. make sure the code as a whole runs as the rubric requires
+9. check for syntax errors and logic errors 
 
-Here is the code:
+The table should start with the following format:
+| Points | Justification |
+|--------|---------------|
+
+
+Here is the java code:
 <code>
 ${code}
 </code>
+
+
 `,
       "attachments": [
         { "file_id": fileId, "tools": [{"type": "file_search"}] }
@@ -63,9 +72,9 @@ ${code}
     });
     const assistant = await openai.beta.assistants.create({
       name: "Grading Assistant",
-      instructions: "You are an assistant that helps grade student AP Computer Science A solutions based on a provided rubric. You put the grading table in proper markdown format. No need to cite the rubric, just use it to grade the code.",
+      instructions: "You are an assistant that helps grade student AP Computer Science java code solutions based on a provided rubric. You put the grading table in proper markdown format. No need to cite the rubric, just use it to grade the code.",
       model: "gpt-4o-2024-08-06",
-      temperature: 0.1,
+      temperature: 0,
       tools: [{ type: "file_search" }]
     });
 
@@ -122,7 +131,7 @@ export async function corrections(request: Request) {
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-2024-08-06",
-      temperature: 0.1,
+      temperature: 0,
       messages: [
         {
           role: "system",
