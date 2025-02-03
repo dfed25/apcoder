@@ -7,10 +7,13 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const filePath = formData.get('filePath') as string;
-    const serverPath = formData.get('serverPath') as string;
+    //const serverPath = formData.get('serverPath') as string;
+   // const id = formData.get('id') as string;
+    const openAiFileId = formData.get('openAiFileId') as string;
 
     const code = formData.get('code') as string;
     // Convert PDF to base64
+    /*
     const rubric = encodeURIComponent(filePath)
     console.log(`${serverPath}/${rubric}`);
     const pdfResponse = await fetch(`${serverPath}/${rubric}`);
@@ -36,12 +39,18 @@ export async function POST(request: Request) {
     await fs.promises.unlink(tempFilePath);
 
     const fileId = fileUploadResponse.id;
+    */
+    const fileId = openAiFileId;
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const thread = await openai.beta.threads.create();
-    
+  
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: `Use the rubric pdf to score the java code for the student solution. Create a detailed grading table with the following format:
+      content: `Use the rubric document attached to score the java code for the student solution. Create a detailed grading table with the following format:
 
 Requirements:
 1. Each rubric criterion should be a separate row
@@ -53,6 +62,7 @@ Requirements:
 7. make sure to go through every item in the rubric and grade the code accordingly
 8. make sure the code as a whole runs as the rubric requires
 9. check for syntax errors and logic errors 
+10. only use the rubric attahced named ${filePath}
 
 The table should start with the following format:
 | Points | Justification |
@@ -72,7 +82,7 @@ ${code}
     });
     const assistant = await openai.beta.assistants.create({
       name: "Grading Assistant",
-      instructions: "You are an assistant that helps grade student AP Computer Science java code solutions based on a provided rubric. You put the grading table in proper markdown format. No need to cite the rubric, just use it to grade the code.",
+      instructions: "You are an assistant that helps grade student AP Computer Science java code solutions based on a provided rubric. You put the grading table in proper markdown format. No need to cite the rubric, just use it to grade the code. only use the rubric attached to the thread to grade the code.",
       model: "gpt-4o-2024-08-06",
       temperature: 0,
       tools: [{ type: "file_search" }]
@@ -92,7 +102,7 @@ ${code}
     }
 
     // Clean up
-    await openai.files.del(fileId);
+    //await openai.files.del(fileId);
     // Get the assistant's response
     const messages = await openai.beta.threads.messages.list(thread.id);
     const assistantResponse = messages.data[0].content[0];

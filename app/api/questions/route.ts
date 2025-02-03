@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const { data, error } = await supabase
       .from('questions')
-      .select('year, description, path, rubric');
+      .select('id,year, description, path, rubric,open_ai_file_id');
 
     if (error) throw error;
 

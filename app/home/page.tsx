@@ -92,7 +92,9 @@ export default  function Home() {
             acc[question.year].push({
               description: question.description,
               path: question.path,
-              rubric: question.rubric
+              rubric: question.rubric,
+              open_ai_file_id: question.open_ai_file_id,
+              id: question.id
             });
             return acc;
           }, {});
@@ -172,10 +174,15 @@ export default  function Home() {
     try {
       const fullPath = `${selectedQuestionObj.rubric}`;
       const serverPath = `${window.location.origin}`;
+      const id = selectedQuestionObj.id;
+      const openAiFileId = selectedQuestionObj.open_ai_file_id;
+
       const formData = new FormData();
       formData.append('filePath', fullPath);
       formData.append("code", code);
       formData.append("serverPath", serverPath);
+      formData.append("id", id);
+      formData.append("openAiFileId", openAiFileId);
       
       const response = await fetch('/api/ai', {
         method: 'POST',
@@ -279,7 +286,9 @@ export default  function Home() {
                   formData.append('previousGrade', result);
                   formData.append('filePath', selectedQuestionObj.rubric);
                   formData.append('serverPath', window.location.origin);
-                  
+                  formData.append('id', selectedQuestionObj.id);
+                  formData.append('openaiFileId',selectedQuestionObj.open_ai_file_id);
+
                   const response = await fetch('/api/ai/corrections', {
                     method: 'POST',
                     body: formData,
