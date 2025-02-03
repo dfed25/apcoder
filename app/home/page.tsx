@@ -1,10 +1,10 @@
 "use client";
 import dynamic from 'next/dynamic';
-
+import { createClient } from '@/utils/supabase/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { useEffect, useState } from "react";
 
 // Add helper function for table cell content
@@ -67,7 +67,7 @@ const setPDFWorker = async () => {
   ).toString();
 };
 
-export default function Home() {
+export default  function Home() {
     const [result, setResult] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
@@ -105,6 +105,14 @@ export default function Home() {
         }
       }
 
+      async function checkAuth() {
+        const supabase = createClient();
+        const { data, error } = await supabase.auth.getUser()
+        if (error || !data?.user) {
+          redirect('/')
+        }
+      }
+      checkAuth();
       fetchQuestions();
     }, []);
 

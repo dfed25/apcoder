@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { login } from './checkAuth'
 import {
   Card,
   CardContent,
@@ -58,8 +59,7 @@ export default function Home() {
       }
 
       if (data.session) {
-        router.refresh();
-        router.push('/home');
+        login(email, password);
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
